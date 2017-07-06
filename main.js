@@ -1,9 +1,9 @@
 /**
-last modified: 2016/10/31
-author: Sota Nishiyama
-**/
+ * since: 2016
+ * last modified: 2017/7/6
+ * author: Sota Nishiyama
+ */
 
-// global
 var screen;
 var ctx;
 
@@ -27,24 +27,25 @@ var i,j;
 
 var itemSound = new Audio("item.mp3");
 
-//const
 const FPS = 1000 / 50;
 const INFO_HEIGHT = 30;
-const ITEM_FREQUENCY = 10;    // the greater the rarer
+const ITEM_FREQUENCY = 10;
 const MSG_COLOR = '#FFAD80';
 
-// event
+// events
 function mouseMove () {
 	// update the coordinate of the mouse cursor
 	mouse.x = event.clientX - screen.offsetLeft;
 }
 
 function mouseDown () {
-	if (level === 0) { // start the game
+	if (level === 0) {
+		// start the game
 		level = 1;
 		count = 0;
-	} else { // launch the ball
-		fire = true
+	} else {
+		// launch the ball
+		fire = true;
 	}
 }
 
@@ -62,7 +63,7 @@ window.onload = function () {
 	bar = new Bar();
 	bar.init();
 	bar.position.y = 550;
-	mouse.x = screen.width/2;    // initial position of the bar
+	mouse.x = screen.width / 2;
 
 	ball = new Ball();
 	ball.init();
@@ -90,7 +91,7 @@ window.onload = function () {
 	items = new Array();
 	var index = 0;
 
-	// call loop処理
+	// call loop handling
 	(function () {
 
 		count++;
@@ -116,7 +117,7 @@ window.onload = function () {
 		ctx.fillStyle = bar.color;
 		ctx.fillRect(bar.position.x - half, bar.position.y - (bar.height / 2), bar.width, bar.height);
 
-		//レベルで分岐
+		// branch by the level
 		if (level === 0) {
 
 			// title
@@ -150,10 +151,9 @@ window.onload = function () {
 
 			} else {
 
-				//move the ball
 				ball.move();
 
-				//ボール・バー衝突判定--------------------
+				// collision detection between the ball and the bar --------------------
 				var place = judge(ball,bar);
 
 				switch (place) {
@@ -169,7 +169,7 @@ window.onload = function () {
 
 				}
 
-				// ball, block衝突判定--------------------
+				// collision detection between the ball and blocks--------------------
 				breakAll = true;
 
 				for (i = 0; i < blocks.length; i++) {
@@ -196,7 +196,7 @@ window.onload = function () {
 								break;
 							}
 
-							// when a block gets broken
+							// when a block gets destroyed
 							if (blocks[i][j].life === 0) {
 								blocks[i][j].alive = false;
 								score += blocks[i][j].score;
@@ -220,7 +220,7 @@ window.onload = function () {
 			ctx.beginPath();
 
 			for (i = 0; i < blocks.length; i++) {
-				for ( j = 0; j < blocks[i].length; j++) {
+				for (j = 0; j < blocks[i].length; j++) {
 					if (blocks[i][j].alive) {
 						ctx.fillStyle = blocks[i][j].color;
 						ctx.fillRect(
@@ -287,7 +287,7 @@ window.onload = function () {
 			ctx.fillStyle = ball.color;
 			ctx.fill();
 
-			//一定時間レベル表示
+			// show the level for a while
 			if (count < (1000 / FPS) * 1) { // 1 second
 				ctx.beginPath();
 				ctx.font = '50px Consolas';
@@ -296,21 +296,21 @@ window.onload = function () {
 				ctx.fillText('level ' + level, screen.width / 2, screen.height / 2);
 			}
 
-			//一定時間で初期化
+			// initialize after a while
 			if (itemCount === (1000 / FPS) * 10) { // 10 seconds
 				bar.init();
 				ball.init();
 			}
 
-			//ライフ、レベル、スコア表示
-			//ライフ
+			// show lives, the level, and the score
+			// lives
 			for (i = 1; i < ball.life; i++) {
 				ctx.beginPath();
 				ctx.arc(20 * i,INFO_HEIGHT / 2, 8, 0, Math.PI * 2, false);
 				ctx.fillStyle = ball.color;
 				ctx.fill();
 			}
-			//レベル、スコア
+			// level, score
 			ctx.beginPath();
 			ctx.font = '20px Consolas';
 			ctx.fillStyle = MSG_COLOR;
@@ -319,7 +319,7 @@ window.onload = function () {
 			var msg = 'level ' + level + '     ' + 'score ' + score;
 			ctx.fillText(msg, screen.width / 2, INFO_HEIGHT / 2);
 
-			// when clear
+			// when cleared
 			if (breakAll) {
 				// ready for the next level
 				level++;
