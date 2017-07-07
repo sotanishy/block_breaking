@@ -2,6 +2,7 @@
  * since: 2016
  * last modified: 2017/7/7
  * author: Sota Nishiyama
+ * version: 1.0.0
  */
 
 var screen;
