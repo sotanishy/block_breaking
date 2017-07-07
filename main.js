@@ -1,6 +1,6 @@
 /**
  * since: 2016
- * last modified: 2017/7/6
+ * last modified: 2017/7/7
  * author: Sota Nishiyama
  */
 
@@ -25,7 +25,7 @@ var score = 0;
 
 var i,j;
 
-var itemSound = new Audio("item.mp3");
+var itemSound = new Audio("resources/item.mp3");
 
 const FPS = 1000 / 50;
 const INFO_HEIGHT = 30;
