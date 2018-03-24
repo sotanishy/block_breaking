@@ -1,2 +1,2 @@
-# block_breaking
-A simple block breaking game
+# Breakout
+A simple arcade game
