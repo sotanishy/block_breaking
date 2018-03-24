@@ -1,6 +1,7 @@
-const BAR_WIDTH  = 160;
+const BAR_POSITION_Y = 550;
+const BAR_WIDTH = 160;
 const BAR_HEIGHT = 15;
-const BAR_COLOR  = '#808080';
+const BAR_COLOR = '#808080';
 
 function Bar() {
 	this.position = new Point();
@@ -11,18 +12,19 @@ function Bar() {
 }
 
 Bar.prototype.init = function () {
+    this.position.y = BAR_POSITION_Y;
 	this.width = BAR_WIDTH;
 	this.height = BAR_HEIGHT;
 	this.color = BAR_COLOR;
 };
 
-const BALL_SIZE  = 10;
+const BALL_SIZE = 10;
 const BALL_SPEED = 10;
 const BALL_COLOR = '#808080';
 
 function Ball() {
 	this.position = new Point();
-	this.vector = new Point();
+	this.velocity = new Point();
 	this.size = 0;
 	this.speed = 0;
 	this.life = 5;
@@ -38,42 +40,29 @@ Ball.prototype.init = function () {
 	this.penetration = false;
 }
 
-Ball.prototype.set = function (position, vector) {
-	this.position.x = position.x;
-	this.position.y = position.y;
-	vector.normalize();
-	this.vector.x = vector.x;
-	this.vector.y = vector.y;
+Ball.prototype.set = function (x, y, vx, vy) {
+	this.position.x = x;
+	this.position.y = y;
+	this.velocity.x = vx;
+	this.velocity.y = vy;
+    this.velocity.normalize();
 };
 
 Ball.prototype.move = function () {
 	// move the position based on the speed
-	this.position.x += this.vector.x * this.speed;
-	this.position.y += this.vector.y * this.speed;
+	this.position.x += this.velocity.x * this.speed;
+	this.position.y += this.velocity.y * this.speed;
 
-	// change the direction on hitting the wall
-	if ((this.position.x - this.size < 0 && this.vector.x < 0) || (this.position.x + this.size > screen.width && this.vector.x > 0)) {
-		this.vector.x *= -1;
+	// change the direction when hitting the wall
+	if ((this.position.x - this.size <= 0 && this.velocity.x < 0) || (this.position.x + this.size >= screen.width && this.velocity.x > 0)) {
+		this.velocity.x *= -1;
 	}
-	if (this.position.y  -this.size < INFO_HEIGHT - 3 && this.vector.y < 0) {
-		this.vector.y *= -1;
+	if (this.position.y - this.size <= INFO_HEIGHT && this.velocity.y < 0) {
+		this.velocity.y *= -1;
 	}
-
-	// put down the alive flag on reaching a certain coordinate
-	if (this.position.y - this.size > screen.height) {
-		fire = false;
-		this.life--;
-		bar.init(BAR_WIDTH, BAR_HEIGHT, BAR_COLOR);
-		ball.init(BALL_SIZE, BALL_SPEED, BALL_COLOR);
-		for (i = 0; i < items.length; i++) {
-			items[i].alive = false;
-		}
-	}
-	
 };
 
-//block
-var blockArrange = [
+const BLOCK_ARRANGEMENT = [
 	[
 		[0,0,0,0,0,0,0,0,0,0,0,0,0],
 		[0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -124,7 +113,7 @@ var blockArrange = [
 	],
 ]
 
-const BLOCK_WIDTH  = 37;
+const BLOCK_WIDTH = 37;
 const BLOCK_HEIGHT = 20;
 
 function Block() {
@@ -138,27 +127,27 @@ function Block() {
 	this.shape = 'rect';
 }
 
-Block.prototype.init = function (position) {
-	this.position.x = position.x;
-	this.position.y = position.y;
+Block.prototype.init = function (x, y) {
+	this.position.x = x;
+	this.position.y = y;
 	this.width = BLOCK_WIDTH;
 	this.height = BLOCK_HEIGHT;
 }
 
 Block.prototype.set = function (level, row, col) {
 	level -= 1;
-	if (blockArrange[level][row][col] !== 0) {
+	if (BLOCK_ARRANGEMENT[level][row][col] !== 0) {
 		this.alive = true;
-		this.life = blockArrange[level][row][col];
-		this.score = blockArrange[level][row][col] * 10;
-		switch (blockArrange[level][row][col]) {
-			case 1:
+		this.life = BLOCK_ARRANGEMENT[level][row][col];
+		this.score = BLOCK_ARRANGEMENT[level][row][col] * 10;
+		switch (BLOCK_ARRANGEMENT[level][row][col]) {
+		case 1:
 			this.color = '#02CBFD';
 			break;
-			case 2:
+		case 2:
 			this.color = '#02FD0E'
 			break;
-			case 3:
+		case 3:
 			this.color = '#DEFF00';
 			break;
 		}
@@ -167,8 +156,7 @@ Block.prototype.set = function (level, row, col) {
 	}
 }
 
-// item
-var itemTypes = [
+const ITEM_TYPES = [
 	{
 		name: 'bigBar',
 		apply: function (bar, ball) {
@@ -253,43 +241,23 @@ Item.prototype.move = function () {
  * judge(obj1, obj2)
  * obj1 ... Ball or Item
  * obj2 ... Bar or Block
-*/
-function judge (obj1, obj2) {
-	var differenceX = obj2.position.x - obj1.position.x;
-	var differenceY = obj2.position.y - obj1.position.y;
+ */
+function judge(obj1, obj2) {
+	let diffX = obj2.position.x - obj1.position.x;
+	let diffY = obj2.position.y - obj1.position.y;
 
-	if ( // top and bottom
-		Math.abs(differenceX) <= obj2.width / 2
-		) {
-		if ( // top
-			differenceY <= obj2.height / 2 + obj1.size &&
-			differenceY >= 0
-			) {
+	if (Math.abs(diffX) <= obj2.width / 2 && Math.abs(diffY) <= obj1.size + obj2.height / 2) {
+		if (diffY >= 0) {
 			return 'upper';
-
-		} else if ( // bottom
-			- differenceY <= obj2.height / 2 + obj1.size &&
-			- differenceY >= 0
-			) {
+		} else {
 			return 'lower';
 		}
-
-	} else if ( // side
-		Math.abs(differenceY) <= obj2.height / 2
-		) {
-
-		if ( // left
-			differenceX <= obj2.width / 2 + obj1.size &&
-			differenceX >= 0
-			) {
+	} else if (Math.abs(diffY) <= obj2.height / 2 && Math.abs(diffX) < obj1.size + obj2.width / 2) {
+		if (diffX >= 0) {
 			return 'left';
-
-		} else if ( // right
-			- differenceX <= obj2.width / 2 + obj1.size &&
-			- differenceX >= 0
-			) {
+		} else {
 			return 'right';
 		}
 	}
-	return false;
+	return '';
 }

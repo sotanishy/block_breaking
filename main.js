@@ -1,99 +1,79 @@
 /**
  * since: 2016
- * last modified: 2017/7/7
+ * last modified: 2018/3/24
  * author: Sota Nishiyama
- * version: 1.0.0
  */
 
-var screen;
-var ctx;
+let screen;
 
-var bar;
-var ball;
-var blocks;
-var items;
+let fired = false;
+let mouseX;
+let count = 0;
+let level = 0;
 
-var fire = false;
-var breakAll = false;
-
-var mouse = new Point;
-var ballVector = new Point();
-
-var count = 0;
-var itemCount = 0;
-var level = 0;
-var score = 0;
-
-var i,j;
-
-var itemSound = new Audio("resources/item.mp3");
-
-const FPS = 1000 / 50;
 const INFO_HEIGHT = 30;
-const ITEM_FREQUENCY = 10;
-const MSG_COLOR = '#FFAD80';
 
 // events
-function mouseMove () {
-	// update the coordinate of the mouse cursor
-	mouse.x = event.clientX - screen.offsetLeft;
+function mouseMove() {
+	mouseX = event.clientX - screen.offsetLeft;
 }
 
-function mouseDown () {
+function mouseDown() {
 	if (level === 0) {
-		// start the game
 		level = 1;
 		count = 0;
 	} else {
-		// launch the ball
-		fire = true;
+		fired = true;
 	}
 }
 
 window.onload = function () {
+
+    const FPS = 1000 / 50;
+    const ITEM_FREQUENCY = 10;
+    const MSG_COLOR = '#FFAD80';
+
 	screen = document.getElementById('screen');
 	screen.width = 500;
 	screen.height = 600;
 
-	ctx = screen.getContext('2d');
+	let ctx = screen.getContext('2d');
 
 	screen.addEventListener('mousemove', mouseMove, true);
 	screen.addEventListener('mousedown', mouseDown, true);
 
-	//initialization
-	bar = new Bar();
+	mouseX = screen.width / 2;
+
+	let bar = new Bar();
 	bar.init();
-	bar.position.y = 550;
-	mouse.x = screen.width / 2;
 
-	ball = new Ball();
+	let ball = new Ball();
 	ball.init();
-	ballVector.y = -bar.width / 2;
 
-	var rowNumber = blockArrange[0][0].length;
-	var interval = (screen.width - rowNumber * BLOCK_WIDTH) / (rowNumber + 1);
-	blocks = new Array(blockArrange[0].length);
+	let colCount = BLOCK_ARRANGEMENT[0][0].length;
+	let interval = (screen.width - colCount * BLOCK_WIDTH) / (colCount + 1);
+	let blocks = new Array(BLOCK_ARRANGEMENT[0].length);
 
-	var row, col;
-	for (row = 0; row < blocks.length; row++) {
-		blocks[row] = new Array(rowNumber);
+	for (let row = 0; row < blocks.length; row++) {
+		blocks[row] = new Array(colCount);
 
-		for (col = 0; col < rowNumber; col++) {
-			blocks[row][col] = new Block();
-
-			var blockPoint = new Point();
-			blockPoint.x = BLOCK_WIDTH * (col + 0.5) + interval * (col + 1);
-			blockPoint.y = BLOCK_HEIGHT * (row + 0.5) + interval * (row + 1) + INFO_HEIGHT;
-
-			blocks[row][col].init(blockPoint);
+		for (let col = 0; col < colCount; col++) {
+            let block = new Block();
+			let x = BLOCK_WIDTH * (col + 0.5) + interval * (col + 1);
+			let y = BLOCK_HEIGHT * (row + 0.5) + interval * (row + 1) + INFO_HEIGHT;
+			block.init(x, y);
+            blocks[row][col] = block;
 		}
 	}
 
-	items = new Array();
-	var index = 0;
+	let items = [];
 
-	// call loop handling
+    let score = 0;
+    let itemCount = 0;
+    let itemSound = new Audio("resources/item.mp3");
+
 	(function () {
+        let place, breakAll;
 
 		count++;
 		itemCount++;
@@ -104,20 +84,20 @@ window.onload = function () {
 		ctx.fillRect(0, INFO_HEIGHT, screen.width, 3);
 
 		// calculate the positon of the bar
-		var half = bar.width / 2
-		if (mouse.x < half) {
+		let half = bar.width / 2
+		if (mouseX < half) {
 			bar.position.x = half;
-		} else if (mouse.x > screen.width - half) {
+		} else if (mouseX > screen.width - half) {
 			bar.position.x = screen.width - half;
 		} else {
-			bar.position.x = mouse.x;
+			bar.position.x = mouseX;
 		}
 
-		// draw the bar
+        // draw the bar
 		ctx.beginPath();
 		ctx.fillStyle = bar.color;
 		ctx.fillRect(bar.position.x - half, bar.position.y - (bar.height / 2), bar.width, bar.height);
-
+		
 		// branch by the level
 		if (level === 0) {
 
@@ -126,14 +106,13 @@ window.onload = function () {
 			ctx.font = '100px Consolas';
 			ctx.fillStyle = MSG_COLOR;
 			ctx.textAlign = 'center';
-			ctx.fillText('BLOCK', screen.width / 2, screen.height / 2 - 100);
-			ctx.fillText('BREAKING', screen.width / 2, screen.height / 2);
+			ctx.fillText('BREAKOUT', screen.width / 2, screen.height / 2 - 100);
 			ctx.font = '20px Consolas';
 			ctx.fillText('Click the screen to start the game', screen.width / 2, screen.height / 2 + 100);
 
-			// ready for level 1
-			for (i = 0; i < blocks.length; i++) {
-				for (j = 0; j < blocks[i].length; j++) {
+			// get ready for level 1
+			for (let i = 0; i < blocks.length; i++) {
+				for (let j = 0; j < blocks[i].length; j++) {
 					blocks[i][j].set(1, i, j);
 				}
 			}
@@ -141,72 +120,66 @@ window.onload = function () {
 		} else {
 
 			// move the ball
-			if (!fire) {
-
-				// set the ball
-				var ballPoint = new Point;
-				ballPoint.x = bar.position.x;
-				ballPoint.y = bar.position.y - (bar.height / 2) - ball.size;
-				ballVector.x = 0;
-				ball.set(ballPoint, ballVector);
-
+			if (!fired) {
+				ball.set(bar.position.x, bar.position.y - bar.height / 2 - ball.size, 0, -1);
 			} else {
 
 				ball.move();
 
-				// collision detection between the ball and the bar --------------------
-				var place = judge(ball,bar);
+                // put down the alive flag when reaching a certain coordinate
+                if (ball.position.y - ball.size > screen.height) {
+                    fired = false;
+                    ball.life--;
+                    bar.init();
+                    ball.init();
+                    for (let i = 0; i < items.length; i++) {
+                        items[i].alive = false;
+                    }
+                }
 
-				switch (place) {
+				// collision detection between the ball and the bar
+				place = judge(ball,bar);
 
-					case 'upper':
-					case 'lower':
-					case 'left':
-					case 'right':
-
-					ballVector.x = ball.position.x - bar.position.x;
-					ballVector.y = - bar.width / 2;
-					ball.set(ball.position, ballVector);
-
-				}
-
-				// collision detection between the ball and blocks--------------------
+                if (place !== '') {
+					ball.set(ball.position.x, ball.position.y, ball.position.x - bar.position.x, -bar.width / 2);
+                }
+				
+				// collision detection between the ball and blocks
 				breakAll = true;
 
-				for (i = 0; i < blocks.length; i++) {
-					for (j = 0; j < blocks[i].length; j++) {
+				for (let i = 0; i < blocks.length; i++) {
+					for (let j = 0; j < blocks[i].length; j++) {
 
 						if (blocks[i][j].alive) {
-							place = judge(ball, blocks[i][j]);
+							let place = judge(ball, blocks[i][j]);
 
 							switch (place) {
-								case 'upper':
-								case 'lower':
+							case 'upper':
+							case 'lower':
 								blocks[i][j].life--;
 								if (!ball.penetration || blocks[i][j].life !== 0) {
-									ball.vector.y *= -1;
+									ball.velocity.y *= -1;
 								}
 								break;
 
-								case 'left':
-								case 'right':
+							case 'left':
+							case 'right':
 								blocks[i][j].life--;
 								if (!ball.penetration || blocks[i][j].life !== 0) {
-									ball.vector.x *= -1;
+									ball.velocity.x *= -1;
 								}
 								break;
 							}
 
-							// when a block gets destroyed
 							if (blocks[i][j].life === 0) {
 								blocks[i][j].alive = false;
 								score += blocks[i][j].score;
 								// create an item
-								var makeItem = Math.floor(Math.random() * ITEM_FREQUENCY);
+								let makeItem = Math.floor(Math.random() * ITEM_FREQUENCY);
 								if (makeItem === 0) {
-									items[index] = new Item();
-									items[index].init(blocks[i][j].position);
-									index++;
+                                    let item = new Item();
+                                    item.init(blocks[i][j].position);
+                                    items.push(item);
 								}
 							}
 
@@ -216,12 +189,11 @@ window.onload = function () {
 				}
 
 			}
-
+            
 			// draw blocks
 			ctx.beginPath();
-
-			for (i = 0; i < blocks.length; i++) {
-				for (j = 0; j < blocks[i].length; j++) {
+			for (let i = 0; i < blocks.length; i++) {
+				for (let j = 0; j < blocks[i].length; j++) {
 					if (blocks[i][j].alive) {
 						ctx.fillStyle = blocks[i][j].color;
 						ctx.fillRect(
@@ -236,37 +208,30 @@ window.onload = function () {
 			}
 
 			// items
-			for ( i = 0; i < index; i++) {
+			for (let i = 0; i < items.length; i++) {
 				if (items[i].alive) {
 
 					items[i].move();
 
-					place=judge(items[i],bar);
-					var itemNum = Math.floor(Math.random() * itemTypes.length);
+					let place = judge(items[i],bar);
+					let itemNum = Math.floor(Math.random() * ITEM_TYPES.length);
 
-					switch(place){
-						case 'upper':
-						case 'lower':
-						case 'left':
-						case 'right':
-
-						items[i].alive = false;
+                    if (place !== '') {
+                        items[i].alive = false;
 						bar.init();
 						ball.init();
-						itemTypes[itemNum].apply(bar, ball);
+						ITEM_TYPES[itemNum].apply(bar, ball);
 						itemCount = 0;
 						itemSound.play();
-					}
+                    }
 
-					// draw
 					ctx.beginPath();
-					// set the gradation
-					var gradation = ctx.createLinearGradient(
+					let gradation = ctx.createLinearGradient(
 						items[i].position.x - items[i].size,
 						items[i].position.y - items[i].size,
 						items[i].position.x - items[i].size,
 						items[i].position.y + items[i].size
-						);
+                    );
 					gradation.addColorStop(0, '#00FF60'); 
  					gradation.addColorStop(1, '#00A8FF');
 
@@ -288,8 +253,8 @@ window.onload = function () {
 			ctx.fillStyle = ball.color;
 			ctx.fill();
 
-			// show the level for a while
-			if (count < (1000 / FPS) * 1) { // 1 second
+			// show the level for a second
+			if (count < (1000 / FPS) * 1) {
 				ctx.beginPath();
 				ctx.font = '50px Consolas';
 				ctx.fillStyle = MSG_COLOR;
@@ -297,27 +262,28 @@ window.onload = function () {
 				ctx.fillText('level ' + level, screen.width / 2, screen.height / 2);
 			}
 
-			// initialize after a while
-			if (itemCount === (1000 / FPS) * 10) { // 10 seconds
+			// initialize after 10 seconds
+			if (itemCount === (1000 / FPS) * 10) {
 				bar.init();
 				ball.init();
 			}
 
 			// show lives, the level, and the score
 			// lives
-			for (i = 1; i < ball.life; i++) {
+			for (let i = 1; i < ball.life; i++) {
 				ctx.beginPath();
 				ctx.arc(20 * i,INFO_HEIGHT / 2, 8, 0, Math.PI * 2, false);
 				ctx.fillStyle = ball.color;
 				ctx.fill();
 			}
+
 			// level, score
 			ctx.beginPath();
 			ctx.font = '20px Consolas';
 			ctx.fillStyle = MSG_COLOR;
 			ctx.textAlign = 'center';
 			ctx.textBaseline = 'middle';
-			var msg = 'level ' + level + '     ' + 'score ' + score;
+			let msg = 'level ' + level + '     ' + 'score ' + score;
 			ctx.fillText(msg, screen.width / 2, INFO_HEIGHT / 2);
 
 			// when cleared
@@ -329,12 +295,12 @@ window.onload = function () {
 				bar.init();
 				ball.init();
 
-				for (i = 0; i < index; i++) {
+				for (let i = 0; i < items.length; i++) {
 					items[i].alive = false;
 				}
 
 				// finish the game
-				if (level - 1 === blockArrange.length) {
+				if (level - 1 === BLOCK_ARRANGEMENT.length) {
 					ctx.beginPath();
 					ctx.font = '100px Consolas';
 					ctx.fillStyle = MSG_COLOR;
@@ -345,10 +311,10 @@ window.onload = function () {
 
 					return;
 				} else {
-					fire = false;
+					fired = false;
 
-					for (i = 0; i < blocks.length; i++) {
-						for (j = 0; j < blocks[i].length; j++) {
+					for (let i = 0; i < blocks.length; i++) {
+						for (let j = 0; j < blocks[i].length; j++) {
 							blocks[i][j].set(level, i, j);
 						}
 					}
