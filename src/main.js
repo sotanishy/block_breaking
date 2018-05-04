@@ -1,7 +1,8 @@
 /**
- * since: 2016
- * last modified: 2018/3/24
- * author: Sota Nishiyama
+ * Main program of Breakout game.
+ * Instantiates the objects, listens for user inputs, and update and draws the game.
+ *
+ * @author  Sota Nishiyama
  */
 
 let screen;
@@ -11,7 +12,7 @@ let mouseX;
 let count = 0;
 let level = 0;
 
-const INFO_HEIGHT = 30;
+const STATUS_HEIGHT = 30;
 
 // events
 function mouseMove() {
@@ -30,7 +31,6 @@ function mouseDown() {
 window.onload = function () {
 
     const FPS = 1000 / 50;
-    const ITEM_FREQUENCY = 10;
     const MSG_COLOR = '#FFAD80';
 
 	screen = document.getElementById('screen');
@@ -50,17 +50,17 @@ window.onload = function () {
 	let ball = new Ball();
 	ball.init();
 
-	let colCount = BLOCK_ARRANGEMENT[0][0].length;
-	let interval = (screen.width - colCount * BLOCK_WIDTH) / (colCount + 1);
-	let blocks = new Array(BLOCK_ARRANGEMENT[0].length);
+	let numCol = Block.BLOCK_ARRANGEMENT[0][0].length;
+	let interval = (screen.width - numCol * Block.BLOCK_WIDTH) / (numCol + 1);
+	let blocks = new Array(Block.BLOCK_ARRANGEMENT[0].length);
 
 	for (let row = 0; row < blocks.length; row++) {
-		blocks[row] = new Array(colCount);
+		blocks[row] = new Array(numCol);
 
-		for (let col = 0; col < colCount; col++) {
+		for (let col = 0; col < numCol; col++) {
             let block = new Block();
-			let x = BLOCK_WIDTH * (col + 0.5) + interval * (col + 1);
-			let y = BLOCK_HEIGHT * (row + 0.5) + interval * (row + 1) + INFO_HEIGHT;
+			let x = Block.BLOCK_WIDTH * (col + 0.5) + interval * (col + 1);
+			let y = Block.BLOCK_HEIGHT * (row + 0.5) + interval * (row + 1) + STATUS_HEIGHT;
 			block.init(x, y);
             blocks[row][col] = block;
 		}
@@ -81,7 +81,7 @@ window.onload = function () {
 		ctx.clearRect(0, 0, screen.width, screen.height);
 		ctx.beginPath();
 		ctx.fillStyle = '#909090';
-		ctx.fillRect(0, INFO_HEIGHT, screen.width, 3);
+		ctx.fillRect(0, STATUS_HEIGHT, screen.width, 3);
 
 		// calculate the positon of the bar
 		let half = bar.width / 2
@@ -126,7 +126,7 @@ window.onload = function () {
 
 				ball.move();
 
-                // put down the alive flag when reaching a certain coordinate
+                // put down the alive flag when the ball reaches a certain coordinate
                 if (ball.position.y - ball.size > screen.height) {
                     fired = false;
                     ball.life--;
@@ -138,7 +138,7 @@ window.onload = function () {
                 }
 
 				// collision detection between the ball and the bar
-				place = judge(ball,bar);
+				place = getCollisionLocation(ball,bar);
 
                 if (place !== '') {
 					ball.set(ball.position.x, ball.position.y, ball.position.x - bar.position.x, -bar.width / 2);
@@ -151,11 +151,11 @@ window.onload = function () {
 					for (let j = 0; j < blocks[i].length; j++) {
 
 						if (blocks[i][j].alive) {
-							let place = judge(ball, blocks[i][j]);
+							let loc = getCollisionLocation(ball, blocks[i][j]);
 
-							switch (place) {
-							case 'upper':
-							case 'lower':
+							switch (loc) {
+							case 'top':
+							case 'bottom':
 								blocks[i][j].life--;
 								if (!ball.penetration || blocks[i][j].life !== 0) {
 									ball.velocity.y *= -1;
@@ -175,7 +175,7 @@ window.onload = function () {
 								blocks[i][j].alive = false;
 								score += blocks[i][j].score;
 								// create an item
-								let makeItem = Math.floor(Math.random() * ITEM_FREQUENCY);
+								let makeItem = Math.floor(Math.random() * Item.ITEM_FREQUENCY);
 								if (makeItem === 0) {
                                     let item = new Item();
                                     item.init(blocks[i][j].position);
@@ -213,14 +213,14 @@ window.onload = function () {
 
 					items[i].move();
 
-					let place = judge(items[i],bar);
-					let itemNum = Math.floor(Math.random() * ITEM_TYPES.length);
+					let loc = getCollisionLocation(items[i],bar);
+					let itemNum = Math.floor(Math.random() * Item.ITEM_TYPES.length);
 
-                    if (place !== '') {
+                    if (loc !== '') {
                         items[i].alive = false;
 						bar.init();
 						ball.init();
-						ITEM_TYPES[itemNum].apply(bar, ball);
+						Item.ITEM_TYPES[itemNum].apply(bar, ball);
 						itemCount = 0;
 						itemSound.play();
                     }
@@ -272,7 +272,7 @@ window.onload = function () {
 			// lives
 			for (let i = 1; i < ball.life; i++) {
 				ctx.beginPath();
-				ctx.arc(20 * i,INFO_HEIGHT / 2, 8, 0, Math.PI * 2, false);
+				ctx.arc(20 * i,STATUS_HEIGHT / 2, 8, 0, Math.PI * 2, false);
 				ctx.fillStyle = ball.color;
 				ctx.fill();
 			}
@@ -284,7 +284,7 @@ window.onload = function () {
 			ctx.textAlign = 'center';
 			ctx.textBaseline = 'middle';
 			let msg = 'level ' + level + '     ' + 'score ' + score;
-			ctx.fillText(msg, screen.width / 2, INFO_HEIGHT / 2);
+			ctx.fillText(msg, screen.width / 2, STATUS_HEIGHT / 2);
 
 			// when cleared
 			if (breakAll) {
@@ -300,7 +300,7 @@ window.onload = function () {
 				}
 
 				// finish the game
-				if (level - 1 === BLOCK_ARRANGEMENT.length) {
+				if (level - 1 === Block.BLOCK_ARRANGEMENT.length) {
 					ctx.beginPath();
 					ctx.font = '100px Consolas';
 					ctx.fillStyle = MSG_COLOR;
